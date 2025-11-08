@@ -1,121 +1,125 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BMI Calculator</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Currency Converter</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f4f8fb;
-      color: #222;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-    }
-
-    h1 {
-      color: #005f99;
-      margin-bottom: 20px;
-    }
-
-    .container {
-      background-color: #fff;
-      padding: 25px 30px;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      width: 320px;
-      text-align: center;
-    }
-
-    label {
-      display: block;
-      margin: 10px 0 5px;
-      text-align: left;
-    }
-
-    input {
-      width: 100%;
-      padding: 8px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      margin-bottom: 15px;
-    }
-
-    button {
-      background-color: #007acc;
-      color: #fff;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      width: 100%;
-    }
-
-    button:hover {
-      background-color: #005fa3;
-    }
-
-    #result {
-      margin-top: 20px;
-      font-weight: bold;
-      font-size: 1.1em;
-    }
+    :root{--bg:#f6fafb; --card:#fff; --accent:#1167b1; --muted:#556;}
+    *{box-sizing:border-box}
+    body{font-family:system-ui,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,#eef8ff,#ffffff);display:flex;min-height:100vh;align-items:center;justify-content:center;padding:24px}
+    .card{width:420px;background:var(--card);border-radius:12px;padding:20px;box-shadow:0 12px 30px rgba(17,103,177,0.08)}
+    h1{color:var(--accent);font-size:20px;margin-bottom:6px}
+    .muted{color:var(--muted);font-size:0.95rem;margin-bottom:12px}
+    label{display:block;font-weight:700;margin-top:10px;color:#222}
+    input[type="number"], select{width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;margin-top:6px}
+    .row{display:flex;gap:10px;margin-top:12px}
+    .row select{flex:1}
+    button{width:100%;padding:10px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-weight:700;margin-top:12px;cursor:pointer}
+    .result{margin-top:14px;padding:12px;border-radius:8px;background:#f2fbff;border:1px solid rgba(17,103,177,0.08);font-weight:800;color:#0a3e66;text-align:center}
+    .small{font-size:0.9rem;color:#444;margin-top:8px;text-align:center}
+    .swap{background:#eaf4ff;padding:6px;border-radius:6px;border:1px solid #d6ecff;cursor:pointer}
   </style>
 </head>
 <body>
+  <div class="card" role="region" aria-label="Currency Converter">
+    <h1>Currency Converter</h1>
+    <div class="muted">Convert amount between currencies (static sample rates)</div>
 
-  <!-- BMI Calculator Section -->
-  <div class="container">
-    <h1>BMI Calculator</h1>
+    <label for="amount">Amount</label>
+    <input id="amount" type="number" step="any" placeholder="Enter amount" value="1" />
 
-    <form id="bmiForm" onsubmit="calculateBMI(event)">
-      <label for="weight">Enter Weight (in kg):</label>
-      <input type="number" id="weight" name="weight" step="0.1" required autofocus placeholder="e.g., 60">
+    <div class="row" style="align-items:center">
+      <select id="from">
+        <option value="USD">USD — US Dollar</option>
+        <option value="EUR">EUR — Euro</option>
+        <option value="INR" selected>INR — Indian Rupee</option>
+        <option value="GBP">GBP — British Pound</option>
+      </select>
 
-      <label for="height">Enter Height (in meters):</label>
-      <input type="number" id="height" name="height" step="0.01" required placeholder="e.g., 1.70">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+        <button id="swap" class="swap" title="Swap">⇄</button>
+      </div>
 
-      <button type="submit">Calculate BMI</button>
-    </form>
+      <select id="to">
+        <option value="INR">INR — Indian Rupee</option>
+        <option value="USD">USD — US Dollar</option>
+        <option value="EUR">EUR — Euro</option>
+        <option value="GBP">GBP — British Pound</option>
+      </select>
+    </div>
 
-    <div id="result"></div>
+    <button id="convert">Convert</button>
+
+    <div id="result" class="result" style="display:none" aria-live="polite"></div>
+    <div id="rateInfo" class="small"></div>
+    <div class="small">Rates are sample/static. Replace with live API for production.</div>
   </div>
 
   <script>
-    // JavaScript Function to Calculate BMI
-    function calculateBMI(event) {
-      event.preventDefault(); // Prevent form reload
+    (function(){
+      // Static sample exchange rates relative to USD for demo purpose (1 USD = x currency)
+      // We'll use a rates table for pairwise conversions: base = USD rates
+      const ratesUSD = {
+        USD: 1.0,
+        EUR: 0.92,   // 1 USD = 0.92 EUR
+        INR: 83.50,  // 1 USD = 83.50 INR
+        GBP: 0.80    // 1 USD = 0.80 GBP
+      };
 
-      const weight = parseFloat(document.getElementById('weight').value);
-      const height = parseFloat(document.getElementById('height').value);
-
-      // Validate input
-      if (isNaN(weight) || isNaN(height) || height <= 0) {
-        document.getElementById('result').textContent = "Please enter valid numbers for weight and height.";
-        return;
+      const $ = id => document.getElementById(id);
+      function convert(amount, from, to){
+        // convert via USD as common base: amount_in_USD = amount / ratesUSD[from]; result = amount_in_USD * ratesUSD[to]
+        const fromRate = ratesUSD[from], toRate = ratesUSD[to];
+        if(!fromRate || !toRate) return NaN;
+        const amountInUSD = amount / fromRate;
+        return amountInUSD * toRate;
       }
 
-      const bmi = (weight / (height * height)).toFixed(2);
-      let status = "";
-
-      if (bmi < 18) {
-        status = "Underweight";
-      } else if (bmi >= 18 && bmi < 25) {
-        status = "Normal";
-      } else if (bmi >= 25 && bmi < 30) {
-        status = "Overweight";
-      } else {
-        status = "Obese";
+      function formatNumber(n){
+        // show up to 6 decimals, trim trailing zeros
+        if(!isFinite(n)) return '—';
+        const rounded = Math.round((n + Number.EPSILON) * 1e6) / 1e6;
+        return rounded.toString();
       }
 
-      // Display result
-      document.getElementById('result').innerHTML = 
-        `Your BMI is <strong>${bmi}</strong> — You are <strong>${status}</strong>.`;
-    }
+      function showRateInfo(from, to){
+        // show approximate rate: 1 FROM = x TO
+        const example = convert(1, from, to);
+        $('rateInfo').textContent = `1 ${from} ≈ ${formatNumber(example)} ${to} (sample rates)`;
+      }
+
+      $('convert').addEventListener('click', function(){
+        const amt = Number($('amount').value);
+        const from = $('from').value;
+        const to = $('to').value;
+        if(isNaN(amt)){
+          alert('Enter a valid numeric amount');
+          return;
+        }
+        const res = convert(amt, from, to);
+        $('result').style.display = 'block';
+        $('result').textContent = `${formatNumber(amt)} ${from} = ${formatNumber(res)} ${to}`;
+        showRateInfo(from, to);
+      });
+
+      // instant conversion on Enter key
+      $('amount').addEventListener('keydown', function(e){
+        if(e.key === 'Enter') $('convert').click();
+      });
+
+      // swap currencies
+      $('swap').addEventListener('click', function(){
+        const f = $('from').value;
+        $('from').value = $('to').value;
+        $('to').value = f;
+        // re-run convert if visible
+        if($('result').style.display === 'block') $('convert').click();
+      });
+
+      // show default rate info
+      showRateInfo($('from').value, $('to').value);
+    })();
   </script>
-
 </body>
 </html>
